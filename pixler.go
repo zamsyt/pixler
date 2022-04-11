@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
+	"image/draw"
 	"image/png"
 	"log"
 	"os"
@@ -82,37 +84,117 @@ func saveImg(img image.Image, path string) error {
 	return nil
 }
 
-func main() {
-	if len(os.Args) < 4 {
-		os.Exit(2)
+func colorEq(a, b color.Color) bool {
+	aR, aG, aB, aA := a.RGBA()
+	bR, bG, bB, bA := b.RGBA()
+
+	return (aR == bR &&
+		aG == bG &&
+		aB == bB &&
+		aA == bA)
+}
+
+func pxsEq(img image.Image, r image.Rectangle, o image.Point) bool {
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		for x := r.Min.X; x < r.Max.X; x++ {
+			cc := img.At(x, y)
+			nc := img.At(x+o.X, y+o.Y)
+			if !colorEq(cc, nc) {
+				return false
+			}
+		}
 	}
 
-	cmd := os.Args[1]
-	scale, err := strconv.Atoi(os.Args[2])
+	return true
+}
+
+func Unrepeat(img image.Image) image.Image {
+	b := img.Bounds()
+	tempImg := image.NewRGBA(b)
+	j := 0
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		ln := image.Rect(b.Min.X, y, b.Max.X, y+1)
+		if pxsEq(img, ln, image.Pt(0, 1)) {
+			continue
+		} else {
+			cl := image.Rect(b.Min.X, j, b.Max.X, j+1)
+			draw.Draw(tempImg, cl, img, image.Pt(0, y), draw.Src)
+			j++
+		}
+	}
+
+	tB := image.Rect(0, 0, b.Max.X, j)
+	i := 0
+	for x := b.Min.X; x < b.Max.X; x++ {
+		ln := image.Rect(x, b.Min.Y, x+1, tB.Max.Y)
+		if pxsEq(tempImg, ln, image.Pt(1, 0)) {
+			continue
+		} else {
+			cl := image.Rect(i, b.Min.Y, i+1, tB.Max.Y)
+			draw.Draw(tempImg, cl, tempImg, image.Pt(x, 0), draw.Src)
+			i++
+		}
+	}
+
+	nB := image.Rect(0, 0, i, j)
+	newImg := image.NewRGBA(nB)
+	draw.Draw(newImg, nB, tempImg, nB.Min, draw.Src)
+
+	return newImg
+}
+
+func parseScaleArg(i int) int {
+	scale, err := strconv.Atoi(os.Args[i])
 	if err != nil {
 		log.Fatal(err)
 	}
-	in := os.Args[3]
-	var out string
-	if len(os.Args) > 4 {
-		out = os.Args[4]
-	} else {
-		out = "pixler-output.png"
-	}
+	return scale
+}
+
+func getImgArg(i int) image.Image {
+	in := os.Args[i]
 	img, err := getImg(in)
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	return img
+}
+
+func getOutArg(i int) string {
+	if len(os.Args) > 4 {
+		return os.Args[4]
+	} else {
+		return "pixler-output.png"
+	}
+}
+
+func main() {
+	if len(os.Args) < 2 {
+		os.Exit(2)
+	}
+	cmd := os.Args[1]
+	var err error
 	switch cmd {
 	case "upscale":
+		scale := parseScaleArg(2)
+		img := getImgArg(3)
+		out := getOutArg(4)
 		img = Upscale(scale, img)
 		err = saveImg(img, out)
 	case "downscale":
+		scale := parseScaleArg(2)
+		img := getImgArg(3)
+		out := getOutArg(4)
 		img, err = Downscale(scale, img)
 		if err != nil {
 			log.Fatal(err)
 		}
+		err = saveImg(img, out)
+	case "unrepeat":
+		img := getImgArg(2)
+		out := getOutArg(3)
+		img = Unrepeat(img)
 		err = saveImg(img, out)
 	default:
 		log.Fatalf("Unknown command '%v'", cmd)
