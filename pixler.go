@@ -31,7 +31,7 @@ func downscale(s int, img image.Image) (image.Image, error) {
 	return newImg, nil
 }
 
-func scaleUp(s int, img image.Image) image.Image {
+func upscale(s int, img image.Image) image.Image {
 	b := img.Bounds()
 
 	newImg := image.NewRGBA(
@@ -82,7 +82,7 @@ func saveImg(img image.Image, path string) error {
 
 func main() {
 	//img, _ := getImg("scaled.png")
-	//img = scaleUp(5, img)
+	//img = upscale(5, img)
 	//img, _ = downscale(5, img)
 	//saveImg(img, "unscaled.png")
 }
