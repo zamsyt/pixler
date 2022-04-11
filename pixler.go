@@ -162,8 +162,8 @@ func getImgArg(i int) image.Image {
 }
 
 func getOutArg(i int) string {
-	if len(os.Args) > 4 {
-		return os.Args[4]
+	if len(os.Args) > i {
+		return os.Args[i]
 	} else {
 		return "pixler-output.png"
 	}
