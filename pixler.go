@@ -9,8 +9,26 @@ import (
 	"strings"
 )
 
-func scaleDown(s int, img image.Image) image.Image {
-	return nil
+func downscale(s int, img image.Image) (image.Image, error) {
+	b := img.Bounds()
+
+	if b.Dx()%s != 0 || b.Dy()%s != 0 || s < 1 {
+		return nil, fmt.Errorf("Image dimensions (%v, %v) not divisible by %v", b.Dx(), b.Dy(), s)
+	}
+
+	newImg := image.NewRGBA(
+		image.Rect(b.Min.X/s, b.Min.Y/s, b.Max.X/s, b.Max.Y/s),
+	)
+
+	nB := newImg.Bounds()
+
+	for y := nB.Min.Y; y < nB.Max.Y; y++ {
+		for x := nB.Min.X; x < nB.Max.X; x++ {
+			newImg.Set(x, y, img.At(s*x, s*y))
+		}
+	}
+
+	return newImg, nil
 }
 
 func scaleUp(s int, img image.Image) image.Image {
@@ -63,7 +81,8 @@ func saveImg(img image.Image, path string) error {
 }
 
 func main() {
-	//img, _ := getImg("test.png")
+	//img, _ := getImg("scaled.png")
 	//img = scaleUp(5, img)
-	//saveImg(img, "scaled.png")
+	//img, _ = downscale(5, img)
+	//saveImg(img, "unscaled.png")
 }
