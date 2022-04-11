@@ -4,7 +4,7 @@ Pixel art tools
 
 Current features:
 - Integer scaling
-- Simple automatic downscaling by elimination of repeated lines of pixels
+- Automatic downscaling by elimination of repeated lines of pixels
 
 ## Usage
 
@@ -16,4 +16,4 @@ Current features:
 
 `downscale <factor> <image input> [image output]`
 
-`unrepeat <image input> [image output]` - Automatically downscale image to 1:1 format by removing repeated lines of pixels. Warning: any intentional repeated lines will also be eliminated.
+`unrepeat <image input> [image output]` - Automatically downscale image to 1:1 format by removing repeated lines of pixels. Warning: any intentional repeated lines will also be eliminated. Works only with non-interpolated images.
