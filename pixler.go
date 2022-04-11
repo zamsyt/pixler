@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"image"
 	"image/png"
+	"log"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
-func downscale(s int, img image.Image) (image.Image, error) {
+func Downscale(s int, img image.Image) (image.Image, error) {
 	b := img.Bounds()
 
 	if b.Dx()%s != 0 || b.Dy()%s != 0 || s < 1 {
@@ -31,7 +33,7 @@ func downscale(s int, img image.Image) (image.Image, error) {
 	return newImg, nil
 }
 
-func upscale(s int, img image.Image) image.Image {
+func Upscale(s int, img image.Image) image.Image {
 	b := img.Bounds()
 
 	newImg := image.NewRGBA(
@@ -81,8 +83,41 @@ func saveImg(img image.Image, path string) error {
 }
 
 func main() {
-	//img, _ := getImg("scaled.png")
-	//img = upscale(5, img)
-	//img, _ = downscale(5, img)
-	//saveImg(img, "unscaled.png")
+	if len(os.Args) < 4 {
+		os.Exit(2)
+	}
+
+	cmd := os.Args[1]
+	scale, err := strconv.Atoi(os.Args[2])
+	if err != nil {
+		log.Fatal(err)
+	}
+	in := os.Args[3]
+	var out string
+	if len(os.Args) > 4 {
+		out = os.Args[4]
+	} else {
+		out = "pixler-output.png"
+	}
+	img, err := getImg(in)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	switch cmd {
+	case "upscale":
+		img = Upscale(scale, img)
+		err = saveImg(img, out)
+	case "downscale":
+		img, err = Downscale(scale, img)
+		if err != nil {
+			log.Fatal(err)
+		}
+		err = saveImg(img, out)
+	default:
+		log.Fatalf("Unknown command '%v'", cmd)
+	}
+	if err != nil {
+		log.Fatal(err)
+	}
 }
