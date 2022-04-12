@@ -17,3 +17,5 @@ Current features:
 `downscale <factor> <image input> [image output]`
 
 `unrepeat <image input> [image output]` - Automatically downscale image to 1:1 format by removing repeated lines of pixels. Warning: any intentional repeated lines will also be eliminated. Works only with non-interpolated images.
+
+`palette <image input> [diff output] [template]` - Gives a count of pixels that aren't in the palette, and produces an image of them
