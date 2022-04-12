@@ -1,11 +1,13 @@
 package main
 
 import (
+	"encoding/hex"
 	"fmt"
 	"image"
 	"image/color"
 	"image/draw"
 	"image/png"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -94,6 +96,15 @@ func colorEq(a, b color.Color) bool {
 		aA == bA)
 }
 
+func rgbEq(a, b color.Color) bool {
+	aR, aG, aB, _ := a.RGBA()
+	bR, bG, bB, _ := b.RGBA()
+
+	return (aR == bR &&
+		aG == bG &&
+		aB == bB)
+}
+
 func pxsEq(img image.Image, r image.Rectangle, o image.Point) bool {
 	for y := r.Min.Y; y < r.Max.Y; y++ {
 		for x := r.Min.X; x < r.Max.X; x++ {
@@ -143,6 +154,65 @@ func Unrepeat(img image.Image) image.Image {
 	return newImg
 }
 
+func loadPalette(path string) (color.Palette, error) {
+	f, err := ioutil.ReadFile(path)
+	if err != nil {
+		return nil, err
+	}
+	lns := strings.Split(strings.Replace(string(f), "\r\n", "\n", -1), "\n")
+	var pl color.Palette
+	for _, hexStr := range lns {
+		if hexStr == "" {
+			continue
+		}
+		bc, err := hex.DecodeString(hexStr[1:])
+		if err != nil {
+			return nil, err
+		}
+		r := bc[0]
+		g := bc[1]
+		b := bc[2]
+		var a uint8
+		if len(bc) > 3 {
+			a = bc[3]
+		} else {
+			a = 255
+		}
+		pl = append(pl, color.RGBA{r, g, b, a})
+	}
+	return pl, nil
+}
+
+func PaletteDiff(img image.Image, p color.Palette) (image.Image, int) {
+	b := img.Bounds()
+
+	diff := image.NewRGBA(b)
+	n := 0
+
+	//fmt.Println(p)
+
+	for y := b.Min.Y; y < b.Max.Y; y++ {
+		for x := b.Min.X; x < b.Max.X; x++ {
+			valid := false
+			for _, c := range p {
+				if rgbEq(c, img.At(x, y)) {
+					valid = true
+					break
+				}
+			}
+			if !valid {
+				//fmt.Printf("%v,%v: %v | %v\n", x, y, c, img.At(x, y))
+				diff.Set(x, y, img.At(x, y))
+				n++
+			}
+		}
+	}
+
+	return diff, n
+}
+
+// TODO: all these funcs are redundant, clean up
+
 func parseScaleArg(i int) int {
 	scale, err := strconv.Atoi(os.Args[i])
 	if err != nil {
@@ -166,6 +236,14 @@ func getOutArg(i int) string {
 		return os.Args[i]
 	} else {
 		return "pixler-output.png"
+	}
+}
+
+func getStrArg(i int, dflt string) string {
+	if len(os.Args) > i {
+		return os.Args[i]
+	} else {
+		return dflt
 	}
 }
 
@@ -196,6 +274,19 @@ func main() {
 		out := getOutArg(3)
 		img = Unrepeat(img)
 		err = saveImg(img, out)
+	case "palette":
+		if len(os.Args) < 3 {
+			panic("not enough arguments to command: palette")
+		}
+		img := getImgArg(2)
+		out := getStrArg(3, "diff.png")
+		pl, err := loadPalette(getStrArg(4, "palette.txt"))
+		if err != nil {
+			log.Fatal(err)
+		}
+		diff, n := PaletteDiff(img, pl)
+		saveImg(diff, out)
+		fmt.Printf("%v pixels differ from the palette\n", n)
 	default:
 		log.Fatalf("Unknown command '%v'", cmd)
 	}
