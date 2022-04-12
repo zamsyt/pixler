@@ -18,19 +18,24 @@ import (
 func Downscale(s int, img image.Image) (image.Image, error) {
 	b := img.Bounds()
 
-	if b.Dx()%s != 0 || b.Dy()%s != 0 || s < 1 {
-		return nil, fmt.Errorf("Image dimensions (%v, %v) not divisible by %v", b.Dx(), b.Dy(), s)
+	if s < 1 {
+		return nil, fmt.Errorf("Invalid value of s: %v", s)
 	}
+
+	/*if b.Dx()%s != 0 || b.Dy()%s != 0 {
+		return nil, fmt.Errorf("Image dimensions (%v, %v) not divisible by %v", b.Dx(), b.Dy(), s)
+	}*/
 
 	newImg := image.NewRGBA(
 		image.Rect(b.Min.X/s, b.Min.Y/s, b.Max.X/s, b.Max.Y/s),
 	)
 
 	nB := newImg.Bounds()
+	o := s / 2
 
 	for y := nB.Min.Y; y < nB.Max.Y; y++ {
 		for x := nB.Min.X; x < nB.Max.X; x++ {
-			newImg.Set(x, y, img.At(s*x, s*y))
+			newImg.Set(x, y, img.At(s*x+o, s*y+o))
 		}
 	}
 
