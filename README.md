@@ -5,6 +5,7 @@ Pixel art tools
 Current features:
 - Integer scaling
 - Automatic downscaling by elimination of repeated lines of pixels
+- Check images against a palette
 
 ## Usage
 
